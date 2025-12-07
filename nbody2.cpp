@@ -6,6 +6,7 @@
 #include <ctime>
 #include <cstring>
 #include <cctype>
+#include <chrono>
 
 #ifndef __RESTRICT
 #  define __RESTRICT
@@ -147,7 +148,7 @@ void help(const char* prog){
 }
 
 template<typename T>
-int run_tests(int n, int num_steps, double dt){
+int run_tests(int n, int num_steps, double dt) {
     T* pos = new T[n*NDIM];
     T* vel = new T[n*NDIM];
     T* acc = new T[n*NDIM];
@@ -163,35 +164,56 @@ int run_tests(int n, int num_steps, double dt){
         mass[i]=1.0;
     }
 
-    clock_t t_start=clock();
-    for(int step=0;step<num_steps;step++){
+    double t_start, t_end;
+
+#ifdef _OPENMP
+    t_start = omp_get_wtime();
+#else
+    auto t_start_chrono = std::chrono::high_resolution_clock::now();
+#endif
+
+    for(int step=0; step<num_steps; step++) {
         QuadNode<T>* root = new QuadNode<T>(-1,1,-1,1);
+
+        // Build tree
         for(int i=0;i<n;i++) root->insert(i,pos,n);
         root->compute_com(pos,mass,n);
 
-        #ifdef OPENMP
-        #pragma omp parallel for
+        // Compute acceleration
+#ifdef OPENMP
+#pragma omp parallel for
         for(int i=0;i<n;i++) root->compute_acc(i,pos,acc,n);
-        #elif defined(SERIAL_VEC)
+#elif defined(SERIAL_VEC)
         compute_acc_vec(n,pos,acc,root);
-        #else
+#else
         for(int i=0;i<n;i++) root->compute_acc(i,pos,acc,n);
-        #endif
+#endif
 
+        // Update positions and velocities
         for(int i=0;i<n;i++)
             for(int k=0;k<NDIM;k++){
-                pos_array(i,k,n,pos)+=vel_array(i,k,n,vel)*dt + 0.5*acc_array(i,k,n,acc)*dt*dt;
-                vel_array(i,k,n,vel)+=acc_array(i,k,n,acc)*dt;
+                pos_array(i,k,n,pos) += vel_array(i,k,n,vel)*dt + 0.5*acc_array(i,k,n,acc)*dt*dt;
+                vel_array(i,k,n,vel) += acc_array(i,k,n,acc)*dt;
             }
 
+        // Print stats every 10 steps
         if(step%10==0) search(pos,vel,n);
+
         delete root;
     }
 
-    double t_total=(double)(clock()-t_start)/CLOCKS_PER_SEC;
-    printf("Average time per step = %f ms\n",t_total*1000/num_steps);
+#ifdef _OPENMP
+    t_end = omp_get_wtime();
+    double t_total = t_end - t_start;
+#else
+    auto t_end_chrono = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = t_end_chrono - t_start_chrono;
+    double t_total = elapsed.count();
+#endif
 
-    delete[] pos; delete[] vel; delete[]acc; delete[] mass;
+    printf("Average time per step = %f ms\n", t_total*1000/num_steps);
+
+    delete[] pos; delete[] vel; delete[] acc; delete[] mass;
     return 0;
 }
 
