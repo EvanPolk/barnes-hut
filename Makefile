@@ -1,24 +1,25 @@
-# Compiler
 CXX = g++
-CXXFLAGS = -O3 -std=c++17 -Wall -Wextra -march=native
-
-# Target executable
-TARGET = nbody2
-
-# Source files
+CXXFLAGS = -O3 -march=native -ffast-math
 SRC = nbody2.cpp
 
-# Default target
-all: $(TARGET)
+# Output binaries
+BIN_SERIAL = nbody2_serial
+BIN_VEC    = nbody2_vec
+BIN_OMP    = nbody2_omp
 
-# Build target
-$(TARGET): $(SRC)
-	$(CXX) $(CXXFLAGS) -o $(TARGET) $(SRC)
+all: $(BIN_SERIAL) $(BIN_VEC) $(BIN_OMP)
 
-# Clean build files
+# 1. Baseline serial
+$(BIN_SERIAL): $(SRC)
+	$(CXX) -O2 $(SRC) -o $(BIN_SERIAL)
+
+# 2. Serial vectorized
+$(BIN_VEC): $(SRC)
+	$(CXX) $(CXXFLAGS) -DSERIAL_VEC $(SRC) -o $(BIN_VEC)
+
+# 3. OpenMP parallel
+$(BIN_OMP): $(SRC)
+	$(CXX) $(CXXFLAGS) -fopenmp -DOPENMP $(SRC) -o $(BIN_OMP)
+
 clean:
-	rm -f $(TARGET) *.o
-
-# Run the program
-run: $(TARGET)
-	./$(TARGET)
+	rm -f $(BIN_SERIAL) $(BIN_VEC) $(BIN_OMP)
