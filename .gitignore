@@ -1,1 +1,2 @@
-nbody2
+# Preventing binaries from being comitted
+nbody2_*
