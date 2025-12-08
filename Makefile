@@ -16,7 +16,7 @@ $(BIN_SERIAL): $(SRC)
 
 # 2. OpenMP parallel (threads only)
 $(BIN_OMP): $(SRC)
-	$(CXX) $(CXXFLAGS) -fopenmp -DOPENMP $(SRC) -o $(BIN_OMP)
+	$(CXX) -O2 -fopenmp -DOPENMP $(SRC) -o $(BIN_OMP)
 
 # 3. Combined SIMD + OpenMP
 $(BIN_OMP_VEC): $(SRC)
