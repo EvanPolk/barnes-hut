@@ -183,8 +183,6 @@ int run_tests(int n, int num_steps, double dt) {
 #ifdef OPENMP
 #pragma omp parallel for
         for(int i=0;i<n;i++) root->compute_acc(i,pos,acc,n);
-#elif defined(SERIAL_VEC)
-        compute_acc_vec(n,pos,acc,root);
 #else
         for(int i=0;i<n;i++) root->compute_acc(i,pos,acc,n);
 #endif
